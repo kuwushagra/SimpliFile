@@ -14,6 +14,11 @@ void open_file(const fs::path& path) {
     system(cmd.c_str());
 }
 
+void open_web_link(const std::string& url) {
+    std::string cmd = "xdg-open \"" + url + "\"";  // For Linux systems
+    system(cmd.c_str());
+}
+
 struct ClipboardItem {
     fs::path path;
     bool cut = false;
@@ -21,6 +26,7 @@ struct ClipboardItem {
 ClipboardItem clipboard;
 
 bool rename_active = false;
+bool about_active = false;
 fs::path rename_target;
 char rename_buffer[256];
 
@@ -33,7 +39,7 @@ std::vector<fs::directory_entry> list_directory(const fs::path& dir) {
     return entries;
 }
 
-void ApplyCustomStyle() {
+void applyCustomStyle() {
     ImGuiStyle& style = ImGui::GetStyle();
 
     style.WindowRounding = 10.0f;
@@ -47,7 +53,6 @@ void ApplyCustomStyle() {
 
     ImVec4* colors = style.Colors;
 
-    // PURE BLACK
     colors[ImGuiCol_WindowBg] = ImVec4(0, 0, 0, 1);
     colors[ImGuiCol_ChildBg]  = ImVec4(0, 0, 0, 1);
 
@@ -67,7 +72,9 @@ int main() {
 
     if (!glfwInit()) return 1;
 
-    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+    if (glfwGetPlatform() != GLFW_PLATFORM_WAYLAND) glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+    else glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+
     const char* glsl_version = "#version 130";
 
     GLFWwindow* window = glfwCreateWindow(800, 600, "SimpliFile - The Simple File Manager", NULL, NULL);
@@ -80,18 +87,28 @@ int main() {
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
 
-    ApplyCustomStyle();
+    applyCustomStyle();
 
-    // Font
+    // Load Font
     std::filesystem::path exe = std::filesystem::canonical("/proc/self/exe");
     std::filesystem::path base = exe.parent_path();
+
+    ImFont* fontTitle = io.Fonts->AddFontFromFileTTF(
+        (base / "includes/fonts/Unbounded-SemiBold.ttf").string().c_str(), 22.0f);
+    
+    ImFont* fontVersion = io.Fonts->AddFontFromFileTTF(
+        (base / "includes/fonts/Unbounded-SemiBold.ttf").string().c_str(), 14.0f);
 
     ImFont* fontDef = io.Fonts->AddFontFromFileTTF(
         (base / "includes/fonts/Onest-VariableFont_wght.ttf").string().c_str(), 18.0f);
 
-    ImFont* fontTitle = io.Fonts->AddFontFromFileTTF(
-        (base / "includes/fonts/Unbounded-SemiBold.ttf").string().c_str(), 22.0f);
+    static const ImWchar icons_ranges[] = { 0xf000, 0xf8ff, 0 };
 
+    ImFontConfig config;
+    config.MergeMode = true;
+    config.PixelSnapH = true;
+    io.Fonts->AddFontFromFileTTF("includes/fonts/FontAwesome.ttf", 14.0f, &config, icons_ranges);
+        
     io.FontDefault = fontDef;
 
     if (io.Fonts->Fonts.empty())
@@ -120,64 +137,62 @@ int main() {
             ImGuiWindowFlags_NoMove |
             ImGuiWindowFlags_NoTitleBar);
 
-        // ===== Custom Title Bar =====
+        // Title Bar
         ImGui::BeginChild("TitleBar", ImVec2(0, 25), false);
 
         ImGui::PushFont(fontTitle);
         ImGui::Text(" SimpliFile");
         ImGui::PopFont();
 
-        // Drag window
-        if (ImGui::IsItemActive() && ImGui::IsMouseDragging(0)) {
-            ImVec2 delta = ImGui::GetIO().MouseDelta;
-            int x, y;
-            glfwGetWindowPos(window, &x, &y);
-            glfwSetWindowPos(window, x + (int)delta.x, y + (int)delta.y);
-        }
-
         ImGui::SameLine(ImGui::GetWindowWidth() - 50);
 
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.00f, 0.85f, 0.10f, 1));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.00f, 0.90f, 0.25f, 1));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.90f, 0.75f, 0.05f, 1));
+    /* Custom title bar buttons will be disabled if running in wayland 
+    since the behaviour is unpredictable. On other systems it will show */  
 
-        if (ImGui::Button("##-", ImVec2(10, 15)))
-            glfwIconifyWindow(window);
+        if (glfwGetPlatform() != GLFW_PLATFORM_WAYLAND) {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(1.00f, 0.85f, 0.10f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.00f, 0.90f, 0.25f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.90f, 0.75f, 0.05f, 1));
 
-        ImGui::SameLine();
-        ImGui::PopStyleColor(3);
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.6f, 0.2f, 1));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.8f, 0.3f, 1));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.05f, 0.5f, 0.15f, 1));
+            
+            if (ImGui::Button("##-", ImVec2(10, 15)))
+                glfwIconifyWindow(window);
 
-        if (ImGui::Button("##o", ImVec2(10, 15))) {
-            fullscreen = !fullscreen;
+            ImGui::SameLine();
+            ImGui::PopStyleColor(3);
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.1f, 0.6f, 0.2f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.8f, 0.3f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.05f, 0.5f, 0.15f, 1));
 
-            if (fullscreen) {
-                GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-                glfwSetWindowMonitor(window, monitor, 0, 0,
-                    mode->width, mode->height, mode->refreshRate);
-            } else {
-                glfwSetWindowMonitor(window, NULL, 100, 100, 1000, 650, 0);
+            if (ImGui::Button("##o", ImVec2(10, 15))) {
+                fullscreen = !fullscreen;
+
+                if (fullscreen) {
+                    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+                    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+                    glfwSetWindowMonitor(window, monitor, 0, 0,
+                        mode->width, mode->height, mode->refreshRate);
+                } else {
+                    glfwSetWindowMonitor(window, NULL, 100, 100, 1000, 650, 0);
+                }
             }
-        }
-        ImGui::PopStyleColor(3);
-        ImGui::SameLine();
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.1f, 0.1f, 1));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.05f, 0.05f, 1));
-        if (ImGui::Button("##x", ImVec2(10, 15)))
-            glfwSetWindowShouldClose(window, true);
+            ImGui::PopStyleColor(3);
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.1f, 0.1f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.05f, 0.05f, 1));
+            if (ImGui::Button("##x", ImVec2(10, 15)))
+                glfwSetWindowShouldClose(window, true);
 
-        ImGui::PopStyleColor(3);
+            ImGui::PopStyleColor(3);
+    }
         ImGui::EndChild();
 
-        // ===== Layout =====
+        // ====================== Application Split Layout =============================
         float totalWidth = ImGui::GetContentRegionAvail().x;
-        float leftWidth = totalWidth * 0.325f;
+        float leftWidth = totalWidth * 0.19f;
 
-        // Sidebar
+        // Side panel
         ImGui::BeginChild("Sidebar", ImVec2(leftWidth, 0), true);
 
         ImGui::Text("Quick Access");
@@ -186,19 +201,19 @@ int main() {
         ImGui::PopStyleColor();
         ImGui::Spacing();
         
-        if (ImGui::Button("Home")) current_dir = fs::path(getenv("HOME"));
-        if (ImGui::Button("Desktop")) current_dir = fs::path(getenv("HOME")) / "Desktop";
-        if (ImGui::Button("Documents")) current_dir = fs::path(getenv("HOME")) / "Documents";
-        if (ImGui::Button("Downloads")) current_dir = fs::path(getenv("HOME")) / "Downloads";
-        if (ImGui::Button("Pictures")) current_dir = fs::path(getenv("HOME")) / "Pictures";
-        if (ImGui::Button("Videos")) current_dir = fs::path(getenv("HOME")) / "Videos";
-        if (ImGui::Button("Music")) current_dir = fs::path(getenv("HOME")) / "Music";
+        if (ImGui::Button("\uf015 Home")) current_dir = fs::path(getenv("HOME"));
+        if (ImGui::Button("\uf03e Desktop")) current_dir = fs::path(getenv("HOME")) / "Desktop";
+        if (ImGui::Button("\uf02d Documents")) current_dir = fs::path(getenv("HOME")) / "Documents";
+        if (ImGui::Button("\uf019 Downloads")) current_dir = fs::path(getenv("HOME")) / "Downloads";
+        if (ImGui::Button("\uf030 Pictures")) current_dir = fs::path(getenv("HOME")) / "Pictures";
+        if (ImGui::Button("\uf03d Videos")) current_dir = fs::path(getenv("HOME")) / "Videos";
+        if (ImGui::Button("\uf001 Music")) current_dir = fs::path(getenv("HOME")) / "Music";
 
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.1f, 0.1f, 1));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.05f, 0.05f, 1));
 
-        if (ImGui::Button("Root"))
+        if (ImGui::Button("\uf07b (!) Root"))
             current_dir = fs::path("/");
 
         ImGui::PopStyleColor(3);
@@ -207,7 +222,7 @@ int main() {
         ImGui::Separator();
         ImGui::Spacing();
 
-        if (ImGui::Button("Up")) {
+        if (ImGui::Button("\uf062")) {
             if (current_dir.has_parent_path()) {
             current_dir = current_dir.parent_path();
             }
@@ -216,7 +231,7 @@ int main() {
 
         ImGui::SameLine();
 
-        if (ImGui::Button("New Folder")) {
+        if (ImGui::Button("\uf07b")) {
             try {
                 fs::path new_dir = current_dir / "New Folder";
 
@@ -239,7 +254,7 @@ int main() {
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2f, 0.8f, 0.3f, 1));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.05f, 0.5f, 0.15f, 1));
 
-            if (ImGui::Button("Paste")) {
+            if (ImGui::Button("\uf0ea")) {
 
                 fs::path dest = current_dir / clipboard.path.filename();
 
@@ -272,6 +287,53 @@ int main() {
             ImGui::PopStyleColor(3);
         }
 
+        ImGui::NewLine();
+        ImGui::SetCursorPosY(ImGui::GetWindowHeight() - ImGui::GetTextLineHeightWithSpacing() - 17);
+        //ImGui::SetCursorPosX(ImGui::GetWindowWidth() - ImGui::CalcTextSize("uuf0+v1.0.1").x - 17);
+        if (ImGui::Button("\uf05a About ")) about_active = true;
+        ImGui::SameLine();
+        if (ImGui::Button("\uf09b")) open_web_link("https://www.github.com/kuwushagra/SimpliFile");
+        
+
+         // About Popup
+        if (about_active) {
+            ImGui::OpenPopup("About");
+
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0, 0, 0, 1));
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.15f, 1));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.25f, 0.25f, 0.25f, 1));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.30f, 0.30f, 0.30f, 1));
+
+            ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.65f, 0.50f, 0.05f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.75f, 0.58f, 0.08f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImVec4(0.50f, 0.38f, 0.04f, 1.0f));
+
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.25f, 0.25f, 1));
+
+            ImGui::PushFont(fontVersion);
+            if (ImGui::BeginPopupModal("About", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+                ImGui::Text("SimpliFile - The Simple File Manager\n");
+                ImGui::PopFont();
+                ImGui::Text("This File Manager was made as a college project and can perform very basic operations such as:\n- Creation of New Folders\n- Deletion of Folders\n- Cut/Copy/Paste (on both files and folders)\n- Renaming of files and folders\n- Navigation of folders\n- Launching/opening files of various types by double click (opens in the default app set by your DE)");
+                ImGui::PushFont(fontVersion);
+                ImGui::Text("Version: v1.1.0");
+                ImGui::PopFont();
+                ImGui::Spacing();
+
+                if (ImGui::Button("Ok")) {
+                    ImGui::CloseCurrentPopup();
+                    about_active = false;
+                }
+                
+                ImGui::EndPopup();
+            }
+            
+            ImGui::PopStyleColor(11);
+        }
+
         ImGui::EndChild();
 
         ImGui::SameLine();
@@ -299,6 +361,7 @@ int main() {
                 } else {
                     open_file(entry.path());
                 }
+
             }
             
             if (ImGui::BeginPopupContextItem(name.c_str())) {
@@ -313,9 +376,9 @@ int main() {
                 if (ImGui::MenuItem("Delete")) {
                     try {
                         if (fs::is_directory(entry.path())) {
-                            fs::remove_all(entry.path()); //folder
+                            fs::remove_all(entry.path()); // folder
                         } else {
-                            fs::remove(entry.path()); //file
+                            fs::remove(entry.path()); // file
                         }
                     } catch (const std::exception& e) {
                         std::cerr << "Delete error: " << e.what() << std::endl;
@@ -335,8 +398,26 @@ int main() {
         if (rename_active) {
             ImGui::OpenPopup("Rename Item");
 
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0, 0, 0, 1));
+            ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, 1));
+            ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.15f, 1));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(0.25f, 0.25f, 0.25f, 1));
+            ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.30f, 0.30f, 0.30f, 1));
+
+            ImGui::PushStyleColor(ImGuiCol_TitleBg, ImVec4(0.65f, 0.50f, 0.05f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_TitleBgActive, ImVec4(0.75f, 0.58f, 0.08f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_TitleBgCollapsed, ImVec4(0.50f, 0.38f, 0.04f, 1.0f));
+
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.2f, 0.2f, 0.2f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.3f, 0.3f, 0.3f, 1));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.25f, 0.25f, 0.25f, 1));
+
+            ImGui::PushFont(fontVersion);
             if (ImGui::BeginPopupModal("Rename Item", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-                ImGui::InputText("New name", rename_buffer, IM_ARRAYSIZE(rename_buffer));
+                ImGui::PopFont();
+                ImGui::Text(" Enter the new name: ");
+                ImGui::InputText("##New name", rename_buffer, IM_ARRAYSIZE(rename_buffer));
+                ImGui::Spacing();
 
                 if (ImGui::Button("OK")) {
                     fs::path new_path = rename_target.parent_path() / rename_buffer;
@@ -355,11 +436,13 @@ int main() {
 
                 ImGui::EndPopup();
             }
+            
+            ImGui::PopStyleColor(11);
         }
 
         ImGui::End();
 
-        // Render
+        // Render window
         ImGui::Render();
         int w, h;
         glfwGetFramebufferSize(window, &w, &h);

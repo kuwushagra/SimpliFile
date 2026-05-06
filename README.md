@@ -47,3 +47,5 @@ Here are the various assets used by this project and where they have been taken 
     - https://fonts.google.com/specimen/Unbounded
 - (Font) Onest: 
     - https://fonts.google.com/specimen/Onest
+- (Font) FontAwesome: 
+    - https://fontawesome.com/

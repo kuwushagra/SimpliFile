@@ -15,7 +15,7 @@
 #CXX = clang++
 
 forkname = "v"
-version = "1.0.0"
+version = "1.1.0"
 revision = ""
 buildnumber = ${forkname}${version}${revision}
 EXE = SimpliFile.application
