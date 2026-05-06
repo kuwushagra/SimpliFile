@@ -10,6 +10,7 @@ This File Manager was made as a college project and can perform very basic opera
 - Renaming of files and folders
 - Navigation of folders
 - Launching/opening files of various types by double click (opens in the default app set by your DE)
+- Show used space in volume
 
 
 ### Platforms
