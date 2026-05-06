@@ -2,6 +2,15 @@
 #include "../includes/simplifile/ui_diskusageblock.h"
 #include "../includes/simplifile/be_openfunctions.h"
 
+ fs::path getHomeDir() {
+        #ifdef _WIN32
+            const char* home = std::getenv("USERPROFILE");
+        #else
+            const char* home = std::getenv("HOME");
+        #endif
+            return home ? fs::path(home) : fs::path();
+    }
+
 // Side Panel
 void uiSidePanel(float leftWidth) {
     ImGui::BeginChild("Sidebar", ImVec2(leftWidth, 0), true);
@@ -11,14 +20,15 @@ void uiSidePanel(float leftWidth) {
     ImGui::Separator();
     ImGui::PopStyleColor();
     ImGui::Spacing();
-    
-    if (ImGui::Button("\uf015 Home")) current_dir = fs::path(getenv("HOME"));
-    if (ImGui::Button("\uf03e Desktop")) current_dir = fs::path(getenv("HOME")) / "Desktop";
-    if (ImGui::Button("\uf02d Documents")) current_dir = fs::path(getenv("HOME")) / "Documents";
-    if (ImGui::Button("\uf019 Downloads")) current_dir = fs::path(getenv("HOME")) / "Downloads";
-    if (ImGui::Button("\uf030 Pictures")) current_dir = fs::path(getenv("HOME")) / "Pictures";
-    if (ImGui::Button("\uf03d Videos")) current_dir = fs::path(getenv("HOME")) / "Videos";
-    if (ImGui::Button("\uf001 Music")) current_dir = fs::path(getenv("HOME")) / "Music";
+
+    fs::path homeDir = getHomeDir();
+    if (ImGui::Button("\uf015 Home")) current_dir = homeDir;
+    if (ImGui::Button("\uf03e Desktop")) current_dir = homeDir / "Desktop";
+    if (ImGui::Button("\uf02d Documents")) current_dir = homeDir / "Documents";
+    if (ImGui::Button("\uf019 Downloads")) current_dir = homeDir / "Downloads";
+    if (ImGui::Button("\uf030 Pictures")) current_dir = homeDir / "Pictures";
+    if (ImGui::Button("\uf03d Videos")) current_dir = homeDir / "Videos";
+    if (ImGui::Button("\uf001 Music")) current_dir = homeDir / "Music";
 
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.1f, 0.1f, 1));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.2f, 0.2f, 1));
