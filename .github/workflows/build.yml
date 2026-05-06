@@ -1,0 +1,119 @@
+name: Build & Create Release
+
+permissions:
+  contents: write
+  pull-requests: write
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        platform: [ubuntu-22.04]
+    runs-on: ${{ matrix.platform }}
+    outputs:
+      glfw: ${{ steps.info.outputs.glfw }}
+      glibc: ${{ steps.info.outputs.glibc }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # ---------------------------
+      # Install Dependencies
+      # ---------------------------
+      - name: Install Dependencies (Linux)
+        shell: bash
+        run: |
+            sudo apt update
+            sudo apt install -y build-essential libfuse2 wget git libglfw3-dev pkg-config
+
+      # ---------------------------
+      # Get Build Info
+      # ---------------------------
+      - name: Get Build Info
+        id: info
+        shell: bash
+        run: |
+            echo "glfw=$(pkg-config --modversion glfw3)" >> $GITHUB_OUTPUT
+            echo "glibc=$(ldd --version | head -n1 | awk '{print $NF}')" >> $GITHUB_OUTPUT
+
+      # ---------------------------
+      # Compile Binary
+      # ---------------------------
+      - name: Compile Binary
+        shell: bash
+        run: make
+
+      # ---------------------------
+      # Package Binary
+      # ---------------------------
+      - name: Package Binary
+        shell: bash
+        run: |
+          chmod +x SimpliFile.application
+          mkdir -p appimage/usr/bin
+          cp SimpliFile.application appimage/usr/bin/
+          cp -r includes/ appimage/usr/bin/includes/
+          chmod +x appimage/AppRun
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          ./appimagetool-x86_64.AppImage appimage SimpliFile.AppImage
+          mkdir -p dist
+          cp SimpliFile.AppImage dist/
+
+      # ---------------------------
+      # Upload Artifacts
+      # ---------------------------
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimpliFile.AppImage
+          path: dist/SimpliFile.AppImage
+
+  # ---------------------------
+  # Release Job
+  # ---------------------------
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+  
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SimpliFile.AppImage
+          path: dist/
+  
+      - name: Create Git Tag
+        id: create_tag
+        shell: bash
+        run: |
+          TAG_NAME="v1.0.0-c$(git rev-list --count HEAD)"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          git tag $TAG_NAME
+          git push origin $TAG_NAME
+          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
+  
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.create_tag.outputs.tag }}
+          files: |
+            dist/SimpliFile.AppImage
+          body: |
+            *This is an automated build, it may not be stable*
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
