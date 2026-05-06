@@ -13,7 +13,7 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [ubuntu-22.04]
+        platform: [ubuntu-22.04, macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     outputs:
       glfw: ${{ steps.info.outputs.glfw }}
@@ -28,33 +28,83 @@ jobs:
       # ---------------------------
       # Install Dependencies
       # ---------------------------
-      - name: Install Dependencies (Linux)
+      - name: Install Dependencies (Linux/macOS)
+        if: runner.os != 'Windows'
         shell: bash
         run: |
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
             sudo apt update
             sudo apt install -y build-essential libfuse2 wget git libglfw3-dev pkg-config
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            xcode-select --install || true
+            brew update
+            brew install wget git pkg-config macfuse
+            brew install glfw || brew upgrade glfw
+          fi
+
+      - name: Install Dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install -y make wget git pkgconfiglite winfsp --no-progress
+          $glfw_url = "https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.bin.WIN64.zip"
+          $glfw_zip = "$env:TEMP\glfw.zip"
+          $glfw_dir = "$env:TEMP\glfw"
+          Invoke-WebRequest -Uri $glfw_url -OutFile $glfw_zip
+          Expand-Archive -Path $glfw_zip -DestinationPath $glfw_dir -Force
+          echo "GLFW_DIR=$glfw_dir\glfw-3.4.bin.WIN64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       # ---------------------------
       # Get Build Info
       # ---------------------------
-      - name: Get Build Info
+      - name: Get Build Info (Linux/macOS)
         id: info
         shell: bash
+        if: runner.os != 'Windows'
         run: |
-            echo "glfw=$(pkg-config --modversion glfw3)" >> $GITHUB_OUTPUT
-            echo "glibc=$(ldd --version | head -n1 | awk '{print $NF}')" >> $GITHUB_OUTPUT
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+              echo "glfw=$(pkg-config --modversion glfw3)" >> $GITHUB_OUTPUT
+              echo "glibc=$(ldd --version | head -n1 | awk '{print $NF}')" >> $GITHUB_OUTPUT
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+              echo "glfw=$(brew info glfw | grep 'glfw:' | awk '{print $2}')" >> $GITHUB_OUTPUT
+              echo "glibc=macOS" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get Build Info (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $glfw = choco list --local-only glfw3 --limit-output | ForEach-Object { ($_ -split ' ')[1] }
+          echo "glfw=$glfw" >> $env:GITHUB_OUTPUT
+          echo "glibc=Windows" >> $env:GITHUB_OUTPUT
 
       # ---------------------------
       # Compile Binary
       # ---------------------------
-      - name: Compile Binary
+      - name: Compile Binary (Linux)
         shell: bash
+        if: runner.os == 'Linux'
+        run: make
+
+      - name: Compile Binary (macOS)
+        shell: bash
+        if: runner.os == 'macOS'
+        run: |
+          make clean
+          make CXXFLAGS="-std=c++17 -arch arm64 -DGL_SILENCE_DEPRECATION -Iincludes/imgui -Iincludes/imgui/backends `pkg-config --cflags glfw3`" \
+               LDFLAGS="-std=c++17 -arch arm64 `pkg-config --libs glfw3` -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo -lc++" \
+               TARGET=SimpliFile-arm64
+
+      - name: Compile Binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: make
 
       # ---------------------------
       # Package Binary
       # ---------------------------
-      - name: Package Binary
+      - name: Package Binary (Linux)
+        if: runner.os == 'Linux'
         shell: bash
         run: |
           chmod +x SimpliFile.application
@@ -68,14 +118,67 @@ jobs:
           mkdir -p dist
           cp SimpliFile.AppImage dist/
 
+      - name: Package Binary (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          rm -rf SimpliFile.app
+          mkdir -p SimpliFile.app/Contents/MacOS
+          cp SimpliFile SimpliFile.app/Contents/MacOS/SimpliFile
+          cp -r includes/ SimpliFile.app/Contents/MacOS/includes
+          cat > SimpliFile.app/Contents/Info.plist <<EOF
+          <?xml version='1.0' encoding='UTF-8'?>
+          <plist version='1.0'>
+            <dict>
+              <key>CFBundleName</key>
+              <string>SimpliFile</string>
+              <key>CFBundleExecutable</key>
+              <string>SimpliFile</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.example.simplifile</string>
+              <key>CFBundleVersion</key>
+              <string>1.0</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+            </dict>
+          </plist>
+          EOF
+          zip -r SimpliFile-macos.zip SimpliFile.app
+          mkdir -p dist
+          mv SimpliFile-macos.zip dist/
+
+      - name: Package Binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+            New-Item -ItemType Directory -Force -Path dist
+            Copy-Item SimpliFile.exe -Destination dist/
+            Copy-Item -Recurse includes dist/includes
+            Compress-Archive -Path dist/* -DestinationPath dist/SimpliFile-Windows.zip
+
       # ---------------------------
       # Upload Artifacts
       # ---------------------------
-      - name: Upload Artifact
+      - name: Upload Linux Artifact
+        if: runner.os == 'Linux'
         uses: actions/upload-artifact@v4
         with:
           name: SimpliFile.AppImage
           path: dist/SimpliFile.AppImage
+
+      - name: Upload macOS Artifact
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimpliFile-macos.zip
+          path: dist/SimpliFile-macos.zip
+
+      - name: Upload Windows Artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimpliFile-Windows.zip
+          path: dist/SimpliFile-Windows.zip
 
   # ---------------------------
   # Release Job
@@ -89,17 +192,29 @@ jobs:
         with:
           fetch-depth: 0
   
-      - name: Download Artifact
+      - name: Download Linux Artifact
         uses: actions/download-artifact@v4
         with:
           name: SimpliFile.AppImage
+          path: dist/
+  
+      - name: Download macOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SimpliFile-macos.zip
+          path: dist/
+  
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: SimpliFile-Windows.zip
           path: dist/
   
       - name: Create Git Tag
         id: create_tag
         shell: bash
         run: |
-          TAG_NAME="v1.2.0-c$(git rev-list --count HEAD)"
+          TAG_NAME="v1.3.0-c$(git rev-list --count HEAD)"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           git tag $TAG_NAME
@@ -112,8 +227,14 @@ jobs:
           tag_name: ${{ steps.create_tag.outputs.tag }}
           files: |
             dist/SimpliFile.AppImage
+            dist/SimpliFile-macos.zip
+            dist/SimpliFile-Windows.zip
           body: |
             *This is an automated build, it may not be stable*
+            **Builds by platform:**
+            - Windows: SimpliFile-Windows.zip
+            - Linux: SimpliFile.AppImage
+            - macOS (Apple Silicon only): SimpliFile-macos.zip
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

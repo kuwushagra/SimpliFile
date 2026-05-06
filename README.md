@@ -14,14 +14,31 @@ This File Manager was made as a college project and can perform very basic opera
 
 
 ### Platforms
-<img src="https://skillicons.dev/icons?i=linux"/>
-This application is presently usable and buildable only on linux.
+<img src="https://skillicons.dev/icons?i=windows"/> <img src="https://skillicons.dev/icons?i=linux"/> <img src="https://skillicons.dev/icons?i=apple"/>  
+
+This application is presently usable and buildable on Windows, Linux & macOS.
 
 ## Running:
+
+### Windows:
+- Download the latest SimpliFile-Windows.zip from the [Releases Section](https://github.com/kuwushagra/SimpliFile/releases)
+- Extract both the `.exe` and the `includes` folder
+- Get the latest version of `MinGW-w64`
+- Double click the executable or execute `SimpliFile.exe` from the commandline
+- 
+### Linux:
 1. Download the latest AppImage from the [Releases Section](https://github.com/kuwushagra/SimpliFile/releases)
 2. Run `sudo apt install libfuse2t64 libglfw3`
 3. Run `chmod +x SimpliFile.AppImage`
 4. Either double click on the AppImage or run `./SimpliFile.AppImage`
+
+### macOS:
+> [!IMPORTANT]  
+> Only Apple Silicon macs are supported
+> 
+- Download the latest SimpliFile-macos.zip from the [Releases Section](https://github.com/kuwushagra/SimpliFile/releases)
+- Extract the `SimpliFile.app` file
+- Double click to launch
 
 ## Compiling:
 Make sure you have the following installed and working on your system:  

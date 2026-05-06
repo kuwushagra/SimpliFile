@@ -36,7 +36,6 @@ bool fullscreen = false;
 int main() {
 
     // GLFW Init
-    setenv("GLFW_PLATFORM", "x11", 1);
     if (!glfwInit()) return 1;
     glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
     const char* glsl_version = "#version 130";
@@ -53,8 +52,8 @@ int main() {
     applyCustomStyle();
 
     // Load Font
-    std::filesystem::path exe = std::filesystem::canonical("/proc/self/exe");
-    std::filesystem::path base = exe.parent_path();
+    fs::path exe =  getBasePath();
+    fs::path base = exe;
 
     fontTitle = io.Fonts->AddFontFromFileTTF(
         (base / "includes/fonts/Unbounded-SemiBold.ttf").string().c_str(), 22.0f);
