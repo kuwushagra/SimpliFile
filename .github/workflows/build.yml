@@ -99,7 +99,7 @@ jobs:
         id: create_tag
         shell: bash
         run: |
-          TAG_NAME="v1.1.0-c$(git rev-list --count HEAD)"
+          TAG_NAME="v1.2.0-c$(git rev-list --count HEAD)"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           git tag $TAG_NAME
