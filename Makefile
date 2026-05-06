@@ -15,7 +15,7 @@
 #CXX = clang++
 
 forkname = "v"
-version = "1.1.0"
+version = "1.2.0"
 revision = ""
 buildnumber = ${forkname}${version}${revision}
 EXE = SimpliFile.application
@@ -32,7 +32,17 @@ OBJ_DIR = obj
 # Sources
 #---------------------------------------------------------------------
 
-SOURCES = $(SRC_DIR)/main.cpp
+SOURCES = $(SRC_DIR)/be_openfunctions.cpp \
+          $(SRC_DIR)/ui_styles.cpp \
+          $(SRC_DIR)/ui_diskusageblock.cpp \
+          $(SRC_DIR)/ui_popuprename.cpp\
+          $(SRC_DIR)/ui_popupabout.cpp\
+          $(SRC_DIR)/ui_popupoperations.cpp\
+          $(SRC_DIR)/ui_titlebar.cpp\
+          $(SRC_DIR)/ui_sidepanel.cpp\
+          $(SRC_DIR)/ui_mainpanel.cpp\
+          $(SRC_DIR)/main.cpp 
+
 SOURCES += $(IMGUI_DIR)/imgui.cpp \
            $(IMGUI_DIR)/imgui_demo.cpp \
            $(IMGUI_DIR)/imgui_draw.cpp \
