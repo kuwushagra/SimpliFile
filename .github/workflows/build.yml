@@ -94,8 +94,8 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-            New-Item -ItemType Directory -Force -Path dist
-            Copy-Item SimpliFile.exe -Destination dist/
+            mkdir -p dist
+            Copy-Item SimpliFile.exe dist/
             Copy-Item -Recurse includes dist/includes
             Compress-Archive -Path dist/* -DestinationPath dist/SimpliFile-windows.zip
 
