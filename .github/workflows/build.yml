@@ -152,7 +152,7 @@ jobs:
       - name: Create Tag
         id: tag
         run: |
-          TAG="v1.3.1-c$(git rev-list --count HEAD)"
+          TAG="v1.3.5-c$(git rev-list --count HEAD)"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git tag $TAG
