@@ -12,33 +12,74 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [ubuntu-22.04, macos-14, windows-latest]
+        include:
+          - platform: ubuntu-22.04
+            name: linux
+
+          - platform: windows-latest
+            name: windows
+
+          - platform: macos-13
+            name: macos-intel
+
+          - platform: macos-14
+            name: macos-arm
 
     runs-on: ${{ matrix.platform }}
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install dependencies (Linux/macOS)
+      - name: Install deps (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          echo "install deps"
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            sudo apt update
+            sudo apt install -y build-essential libglfw3-dev pkg-config
+          else
+            brew update
+            brew install glfw pkg-config
+          fi
 
-      - name: Install dependencies (Windows)
+      - name: Install deps (Windows)
         if: runner.os == 'Windows'
         run: |
-          echo "install deps"
+          choco install -y make
 
       - name: Build
         run: make
 
-      - name: Package
+      - name: Build macOS .app
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          make bundle-macos
+
+          # rename per architecture
+          ARCH=$(uname -m)
+
+          mkdir -p dist
+
+          mv SimpliFile.app SimpliFile-$ARCH.app
+          zip -r dist/SimpliFile-macos-$ARCH.zip SimpliFile-$ARCH.app
+
+      - name: Package Linux
+        if: runner.os == 'Linux'
         run: |
           mkdir -p dist
-          echo "fake binary" > dist/app
+          cp SimpliFile.application dist/
+          zip -r dist/SimpliFile-linux.zip dist/
+
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          mkdir -p dist
+          Copy-Item SimpliFile.exe dist/
+          Compress-Archive -Path dist/* -DestinationPath dist/SimpliFile-windows.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }}-build
+          name: SimpliFile-${{ matrix.name }}
           path: dist/
