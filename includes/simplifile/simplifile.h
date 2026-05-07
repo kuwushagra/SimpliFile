@@ -9,6 +9,9 @@
 #include <iostream>
 #ifdef _WIN32
 #include <windows.h>
+#elifdef __APPLE__
+#include <mach-o/dyld.h>
+#include <limits.h>
 #endif
 
 namespace fs = std::filesystem;

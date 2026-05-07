@@ -38,7 +38,7 @@ int main() {
     // GLFW Init
     if (!glfwInit()) return 1;
     glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
-    const char* glsl_version = "#version 130";
+    const char* glsl_version = "#version 120"; // 130 and above are not supported on macOS Tahoe apparently but this works ヽ(°〇°)ﾉ
     window = glfwCreateWindow(800, 600, "SimpliFile - The Simple File Manager", NULL, NULL);
     if (!window) return 1;
 

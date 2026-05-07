@@ -51,8 +51,27 @@ endif
 
 ifeq ($(UNAME_S), Darwin)
     EXE = SimpliFile
-    CXXFLAGS += -DGL_SILENCE_DEPRECATION $(shell pkg-config --cflags glfw3)
-    LDFLAGS += $(shell pkg-config --libs glfw3) -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
+    CXX = clang++
+    BREW_PREFIX := $(shell brew --prefix)
+    ARCH_FLAGS = -arch arm64 -arch x86_64
+
+    CXXFLAGS += \
+        -std=c++17 \
+        $(ARCH_FLAGS) \
+        -DGL_SILENCE_DEPRECATION \
+        -I$(BREW_PREFIX)/include \
+        -I$(IMGUI_DIR) \
+        -I$(IMGUI_DIR)/backends \
+        $(shell pkg-config --cflags glfw3)
+
+    LDFLAGS += \
+        $(ARCH_FLAGS) \
+        -L$(BREW_PREFIX)/lib \
+        $(shell pkg-config --libs glfw3) \
+        -framework OpenGL \
+        -framework Cocoa \
+        -framework IOKit \
+        -framework CoreVideo
 endif
 
 ifeq ($(OS), Windows_NT)
@@ -70,10 +89,26 @@ $(EXE): $(OBJS)
 
 ifeq ($(UNAME_S), Darwin)
 bundle-macos: $(EXE)
-	@mkdir -p $(EXE)/Contents/MacOS
-	@cp SimpliFile.application $(EXE)/Contents/MacOS/
-	@cp -r includes/ $(EXE)/Contents/MacOS/includes/
-	@echo "<?xml version='1.0' encoding='UTF-8'?><plist version='1.0'><dict><key>CFBundleName</key><string>SimpliFile</string></dict></plist>" > $(EXE)/Contents/Info.plist
+	@rm -rf SimpliFile.app
+	@mkdir -p SimpliFile.app/Contents/MacOS
+	@cp SimpliFile SimpliFile.app/Contents/MacOS/SimpliFile
+	@cp -r includes/ SimpliFile.app/Contents/MacOS/includes/
+	@mkdir -p SimpliFile.app/Contents
+	@echo "<?xml version='1.0' encoding='UTF-8'?>
+<plist version='1.0'>
+<dict>
+    <key>CFBundleName</key>
+    <string>SimpliFile</string>
+    <key>CFBundleExecutable</key>
+    <string>SimpliFile</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.example.simplifile</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+</dict>
+</plist>" > SimpliFile.app/Contents/Info.plist
 endif
 
 clean:
