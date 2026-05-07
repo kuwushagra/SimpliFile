@@ -27,7 +27,11 @@ void uiSidePanel(float leftWidth) {
     if (ImGui::Button("\uf02d Documents")) current_dir = homeDir / "Documents";
     if (ImGui::Button("\uf019 Downloads")) current_dir = homeDir / "Downloads";
     if (ImGui::Button("\uf030 Pictures")) current_dir = homeDir / "Pictures";
-    if (ImGui::Button("\uf03d Videos")) current_dir = homeDir / "Videos";
+    #if defined(__APPLE__)
+        if (ImGui::Button("\uf03d Videos")) current_dir = homeDir / "Movies";
+    #else
+        if (ImGui::Button("\uf03d Videos")) current_dir = homeDir / "Videos";
+    #endif
     if (ImGui::Button("\uf001 Music")) current_dir = homeDir / "Music";
 
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.1f, 0.1f, 1));
