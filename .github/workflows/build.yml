@@ -31,14 +31,17 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Install deps (Linux/macOS)
+      - name: Install Dependencies (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
           if [[ "$RUNNER_OS" == "Linux" ]]; then
             sudo apt update
-            sudo apt install -y build-essential libglfw3-dev pkg-config
+            sudo apt install -y build-essential libfuse2 wget git libglfw3-dev pkg-config
           else
             brew update
             brew install glfw pkg-config
@@ -56,7 +59,9 @@ jobs:
           Expand-Archive -Path $glfw_zip -DestinationPath $glfw_dir -Force
           echo "GLFW_DIR=$glfw_dir\glfw-3.4.bin.WIN64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Build
+      - name: Compile Binary (Linux)
+        shell: bash
+        if: runner.os == 'Linux'
         run: make
 
       - name: Build macOS .app
@@ -76,17 +81,30 @@ jobs:
       - name: Package Linux
         if: runner.os == 'Linux'
         run: |
+          - name: Package Binary (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          chmod +x SimpliFile.application
+          mkdir -p appimage/usr/bin
+          cp SimpliFile.application appimage/usr/bin/
+          cp -r includes/ appimage/usr/bin/includes/
+          chmod +x appimage/AppRun
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          ./appimagetool-x86_64.AppImage appimage SimpliFile.AppImage
           mkdir -p dist
-          cp SimpliFile.application dist/
+          cp SimpliFile.AppImage dist/
           zip -r dist/SimpliFile-linux.zip dist/
 
-      - name: Package Windows
+      - name: Package Binary (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          mkdir -p dist
-          Copy-Item SimpliFile.exe dist/
-          Compress-Archive -Path dist/* -DestinationPath dist/SimpliFile-windows.zip
+            New-Item -ItemType Directory -Force -Path dist
+            Copy-Item SimpliFile.exe -Destination dist/
+            Copy-Item -Recurse includes dist/includes
+            Compress-Archive -Path dist/* -DestinationPath dist/SimpliFile-windows.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -149,11 +167,13 @@ jobs:
           files: |
             dist/**/*.zip
           body: |
-            Automated build
-
-            - Linux build
-            - Windows build
-            - macOS Intel + ARM (.app included)
+            *This is an automated build, it may not be stable*
+            **Builds by platform:**
+            - Windows: SimpliFile-windows.zip
+            - Linux: SimpliFile-linux.zip
+            - macOS (Intel based macs): SimpliFile-macos-x86_64.zip
+            - macOS (Apple Silicon): SimpliFile-macos-arm64.zip
+            
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
