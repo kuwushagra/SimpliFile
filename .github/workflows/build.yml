@@ -19,7 +19,7 @@ jobs:
           - platform: windows-latest
             name: windows
 
-          - platform: macos-13
+          - platform: macos-15-intel
             name: macos-intel
 
           - platform: macos-14
