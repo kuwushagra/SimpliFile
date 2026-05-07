@@ -90,3 +90,67 @@ jobs:
         with:
           name: SimpliFile-${{ matrix.name }}
           path: dist/
+          
+  release:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Download Linux
+        uses: actions/download-artifact@v4
+        with:
+          name: SimpliFile-linux
+          path: dist/
+
+      - name: Download Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: SimpliFile-windows
+          path: dist/
+
+      - name: Download macOS Intel
+        uses: actions/download-artifact@v4
+        with:
+          name: SimpliFile-macos-intel
+          path: dist/
+
+      - name: Download macOS ARM
+        uses: actions/download-artifact@v4
+        with:
+          name: SimpliFile-macos-arm
+          path: dist/
+          
+      - name: Create Tag
+        id: tag
+        run: |
+          TAG="v1.3.1-c$(git rev-list --count HEAD)"
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+
+          git tag $TAG
+          git push origin $TAG
+
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          files: |
+            dist/**/*.zip
+          body: |
+            Automated build
+
+            - Linux build
+            - Windows build
+            - macOS Intel + ARM (.app included)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
