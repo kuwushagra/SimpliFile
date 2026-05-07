@@ -33,7 +33,7 @@ fs::path getBasePath() {
         char buffer[PATH_MAX];
         uint32_t size = sizeof(buffer);
         if(_NSGetExecutablePath(buffer, &size) != 0) {
-            throw std::runtime_error("Failed to get executable path ;(";
+            throw std::runtime_error("Failed to get executable path";
         }
         fs::path exe = fs::canonical(buffer);
     #else
