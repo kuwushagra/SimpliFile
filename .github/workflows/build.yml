@@ -67,6 +67,8 @@ jobs:
       - name: Build macOS .app
         if: runner.os == 'macOS'
         shell: bash
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "13.0"
         run: |
           make bundle-macos
           ARCH=$(uname -m)
