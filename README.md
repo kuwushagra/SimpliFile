@@ -27,7 +27,7 @@ This application is presently usable and buildable on Windows, Linux & macOS.
 - Double click the executable or execute `SimpliFile.exe` from the commandline
   
 ### Linux:
-1. Download the latest zip and extract the `dist/SimpliFile.AppImage` from the [Releases Section](https://github.com/kuwushagra/SimpliFile/releases)
+1. Download the latest zip and extract the `SimpliFile.AppImage` from the [Releases Section](https://github.com/kuwushagra/SimpliFile/releases)
 2. Run `sudo apt install libfuse2t64 libglfw3`
 4. Run `chmod +x SimpliFile.AppImage`
 5. Either double click on the AppImage or run `./SimpliFile.AppImage`
