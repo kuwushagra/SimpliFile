@@ -90,6 +90,11 @@ jobs:
           cp SimpliFile.AppImage dist/
           zip -r dist/SimpliFile-linux.zip dist/
 
+      - name: Compile Binary (Windows)
+        shell: bash
+        if: runner.os == 'Windows'
+        run: make
+
       - name: Package Binary (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
