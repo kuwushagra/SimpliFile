@@ -13,7 +13,7 @@ jobs:
   build:
     strategy:
       matrix:
-        platform: [ubuntu-22.04, macos-latest, windows-latest]
+        platform: [ubuntu-22.04, macos-14, windows-latest]
     runs-on: ${{ matrix.platform }}
     outputs:
       glfw: ${{ steps.info.outputs.glfw }}
@@ -86,14 +86,17 @@ jobs:
         if: runner.os == 'Linux'
         run: make
 
-      - name: Compile Binary (macOS)
+      - name: Compile Binary (macOS Universal)
         shell: bash
         if: runner.os == 'macOS'
         run: |
           make clean
-          make CXXFLAGS="-std=c++17 -arch arm64 -DGL_SILENCE_DEPRECATION -Iincludes/imgui -Iincludes/imgui/backends `pkg-config --cflags glfw3`" \
-               LDFLAGS="-std=c++17 -arch arm64 `pkg-config --libs glfw3` -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo -lc++" \
-               TARGET=SimpliFile-arm64
+          make
+      - name: Verify macOS Binary
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          lipo -info SimpliFile
 
       - name: Compile Binary (Windows)
         if: runner.os == 'Windows'
@@ -214,7 +217,7 @@ jobs:
         id: create_tag
         shell: bash
         run: |
-          TAG_NAME="v1.3.0-c$(git rev-list --count HEAD)"
+          TAG_NAME="v1.3.1-c$(git rev-list --count HEAD)"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           git tag $TAG_NAME
