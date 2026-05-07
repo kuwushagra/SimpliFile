@@ -26,7 +26,7 @@ void popupAbout() {
             ImGui::Text("This File Manager was made as a college project and can perform very basic operations such as:\n- Creation of New Folders\n- Deletion of Folders\n- Cut/Copy/Paste (on both files and folders)\n- Renaming of files and folders\n- Navigation of folders\n- Launching/opening files of various types by double click (opens in the default app set by your DE)\n- Show used space in volume");
             ImGui::Spacing();
             ImGui::PushFont(fontVersion);
-            ImGui::Text("Version: v1.3.0");
+            ImGui::Text("Version: v1.3.5");
             ImGui::PopFont();
             ImGui::Spacing();
 
