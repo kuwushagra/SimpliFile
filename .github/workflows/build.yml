@@ -92,7 +92,7 @@ jobs:
           ./appimagetool-x86_64.AppImage appimage SimpliFile.AppImage
           mkdir -p dist
           cp SimpliFile.AppImage dist/
-          zip -r dist/SimpliFile-linux.zip dist/
+          cd dist && zip SimpliFile-linux.zip SimpliFile.AppImage
 
       - name: Compile Binary (Windows)
         shell: bash
