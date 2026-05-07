@@ -41,10 +41,17 @@ jobs:
             brew install glfw pkg-config
           fi
 
-      - name: Install deps (Windows)
+      - name: Install Dependencies (Windows)
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          choco install -y make
+          choco install -y make wget git pkgconfiglite winfsp --no-progress
+          $glfw_url = "https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.bin.WIN64.zip"
+          $glfw_zip = "$env:TEMP\glfw.zip"
+          $glfw_dir = "$env:TEMP\glfw"
+          Invoke-WebRequest -Uri $glfw_url -OutFile $glfw_zip
+          Expand-Archive -Path $glfw_zip -DestinationPath $glfw_dir -Force
+          echo "GLFW_DIR=$glfw_dir\glfw-3.4.bin.WIN64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Build
         run: make
