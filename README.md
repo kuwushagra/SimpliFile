@@ -25,19 +25,18 @@ This application is presently usable and buildable on Windows, Linux & macOS.
 - Extract both the `.exe` and the `includes` folder
 - Get the latest version of `MinGW-w64`
 - Double click the executable or execute `SimpliFile.exe` from the commandline
-- 
+  
 ### Linux:
-1. Download the latest AppImage from the [Releases Section](https://github.com/kuwushagra/SimpliFile/releases)
+1. Download the latest zip and extract the `dist/SimpliFile.AppImage` from the [Releases Section](https://github.com/kuwushagra/SimpliFile/releases)
 2. Run `sudo apt install libfuse2t64 libglfw3`
-3. Run `chmod +x SimpliFile.AppImage`
-4. Either double click on the AppImage or run `./SimpliFile.AppImage`
+4. Run `chmod +x SimpliFile.AppImage`
+5. Either double click on the AppImage or run `./SimpliFile.AppImage`
 
 ### macOS:
-> [!IMPORTANT]  
-> Only Apple Silicon macs are supported
-> 
-- Download the latest SimpliFile-macos.zip from the [Releases Section](https://github.com/kuwushagra/SimpliFile/releases)
-- Extract the `SimpliFile.app` file
+
+- Download the latest SimpliFile-macos-<x86_64/arm64>.zip from the [Releases Section](https://github.com/kuwushagra/SimpliFile/releases) depending on your architecture
+- Run `brew install glfw`
+- Extract the `SimpliFile.app` file (in most cases you will just see the .app file so no need to extract)
 - Double click to launch
 
 ## Compiling:
