@@ -69,19 +69,12 @@ jobs:
         shell: bash
         run: |
           make bundle-macos
-
-          # rename per architecture
           ARCH=$(uname -m)
-
           mkdir -p dist
-
           mv SimpliFile.app SimpliFile-$ARCH.app
           zip -r dist/SimpliFile-macos-$ARCH.zip SimpliFile-$ARCH.app
 
-      - name: Package Linux
-        if: runner.os == 'Linux'
-        run: |
-          - name: Package Binary (Linux)
+      - name: Package Binary (Linux)
         if: runner.os == 'Linux'
         shell: bash
         run: |
@@ -151,13 +144,10 @@ jobs:
         id: tag
         run: |
           TAG="v1.3.1-c$(git rev-list --count HEAD)"
-
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-
           git tag $TAG
           git push origin $TAG
-
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Create Release
