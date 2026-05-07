@@ -51,8 +51,27 @@ endif
 
 ifeq ($(UNAME_S), Darwin)
     EXE = SimpliFile
-    CXXFLAGS += -DGL_SILENCE_DEPRECATION $(shell pkg-config --cflags glfw3)
-    LDFLAGS += $(shell pkg-config --libs glfw3) -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
+    CXX = clang++
+
+    BREW_PREFIX := $(shell brew --prefix)
+
+    CXXFLAGS += \
+        -std=c++17 \
+        -arch arm64 \
+        -DGL_SILENCE_DEPRECATION \
+        -I$(BREW_PREFIX)/include \
+        -I$(IMGUI_DIR) \
+        -I$(IMGUI_DIR)/backends \
+        $(shell pkg-config --cflags glfw3)
+
+    LDFLAGS += \
+        -arch arm64 \
+        -L$(BREW_PREFIX)/lib \
+        $(shell pkg-config --libs glfw3) \
+        -framework OpenGL \
+        -framework Cocoa \
+        -framework IOKit \
+        -framework CoreVideo
 endif
 
 ifeq ($(OS), Windows_NT)
