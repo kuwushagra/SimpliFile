@@ -71,6 +71,8 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: "13.0"
         run: |
           make bundle-macos
+          mkdir -p SimpliFile.app/Contents/Resources
+          cp -r includes SimpliFile.app/Contents/Resources/
           ARCH=$(uname -m)
           mkdir -p dist
           mv SimpliFile.app SimpliFile-$ARCH.app
