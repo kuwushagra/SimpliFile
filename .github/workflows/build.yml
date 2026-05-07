@@ -45,7 +45,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          choco install -y make wget git pkgconfiglite winfsp --no-progress
+          choco install -y make wget git winfsp --no-progress
           $glfw_url = "https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.bin.WIN64.zip"
           $glfw_zip = "$env:TEMP\glfw.zip"
           $glfw_dir = "$env:TEMP\glfw"
