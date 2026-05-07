@@ -13,58 +13,62 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      - name: Download Linux Artifact
+      - name: Download Linux
         uses: actions/download-artifact@v4
         with:
-          name: SimpliFile.AppImage
+          name: SimpliFile-linux
           path: dist/
 
-      - name: Download macOS Artifact
+      - name: Download Windows
         uses: actions/download-artifact@v4
         with:
-          name: SimpliFile-macos.zip
+          name: SimpliFile-windows
           path: dist/
 
-      - name: Download Windows Artifact
+      - name: Download macOS Intel
         uses: actions/download-artifact@v4
         with:
-          name: SimpliFile-Windows.zip
+          name: SimpliFile-macos-intel
           path: dist/
 
-      - name: Create Git Tag
-        id: create_tag
-        shell: bash
+      - name: Download macOS ARM
+        uses: actions/download-artifact@v4
+        with:
+          name: SimpliFile-macos-arm
+          path: dist/
+
+      # ---------------------------
+      # TAG
+      # ---------------------------
+      - name: Create Tag
+        id: tag
         run: |
-          TAG_NAME="v1.3.1-c$(git rev-list --count HEAD)"
+          TAG="v1.0.$(git rev-list --count HEAD)"
 
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
 
-          git tag $TAG_NAME
-          git push origin $TAG_NAME
+          git tag $TAG
+          git push origin $TAG
 
-          echo "tag=$TAG_NAME" >> $GITHUB_OUTPUT
-          
-      - name: Create GitHub Release
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.create_tag.outputs.tag }}
+          tag_name: ${{ steps.tag.outputs.tag }}
           files: |
-            dist/SimpliFile.AppImage
-            dist/SimpliFile-macos.zip
-            dist/SimpliFile-Windows.zip
+            dist/**/*.zip
           body: |
-            *This is an automated build, it may not be stable*
+            Automated build
 
-            **Builds by platform:**
-            - Windows: SimpliFile-Windows.zip
-            - Linux: SimpliFile.AppImage
-            - macOS (both Intel & Apple Silicon): SimpliFile-macos.zip
-          prerelease: true
+            - Linux build
+            - Windows build
+            - macOS Intel + ARM (.app included)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
