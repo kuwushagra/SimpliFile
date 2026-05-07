@@ -44,6 +44,12 @@ LIBS =
 UNAME_S := $(shell uname -s)
 EXE = SimpliFile.application
 
+ifeq ($(OS), Windows_NT)
+    EXE = SimpliFile.exe
+    CXXFLAGS += -I"$(GLFW_DIR)/include" -Iincludes/imgui -Iincludes/imgui/backends
+    LDFLAGS  += -L"$(GLFW_DIR)/lib-mingw-w64" -lglfw3 -lgdi32 -lopengl32 -limm32
+endif
+
 ifeq ($(UNAME_S), Linux)
     LIBS += -lGL `pkg-config --static --libs glfw3`
     CXXFLAGS += `pkg-config --cflags glfw3`
