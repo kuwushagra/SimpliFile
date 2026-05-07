@@ -52,32 +52,23 @@ endif
 ifeq ($(UNAME_S), Darwin)
     EXE = SimpliFile
     CXX = clang++
-    BREW_PREFIX := $(shell brew --prefix)
-    ARCH_FLAGS = -arch arm64 -arch x86_64
+
+    BREW_PREFIX := $(shell brew --prefix glfw)
 
     CXXFLAGS += \
         -std=c++17 \
-        $(ARCH_FLAGS) \
         -DGL_SILENCE_DEPRECATION \
         -I$(BREW_PREFIX)/include \
         -I$(IMGUI_DIR) \
-        -I$(IMGUI_DIR)/backends \
-        $(shell pkg-config --cflags glfw3)
+        -I$(IMGUI_DIR)/backends
 
     LDFLAGS += \
-        $(ARCH_FLAGS) \
         -L$(BREW_PREFIX)/lib \
-        $(shell pkg-config --libs glfw3) \
+        -lglfw \
         -framework OpenGL \
         -framework Cocoa \
         -framework IOKit \
         -framework CoreVideo
-endif
-
-ifeq ($(OS), Windows_NT)
-    EXE = SimpliFile.exe
-    CXXFLAGS += -I"$(GLFW_DIR)/include" -Iincludes/imgui -Iincludes/imgui/backends
-    LDFLAGS  += -L"$(GLFW_DIR)/lib-mingw-w64" -lglfw3 -lgdi32 -lopengl32 -limm32
 endif
 
 $(OBJ_DIR)/%.o: %.cpp
