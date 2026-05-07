@@ -88,27 +88,32 @@ $(EXE): $(OBJS)
 	$(CXX) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 ifeq ($(UNAME_S), Darwin)
+
 bundle-macos: $(EXE)
 	@rm -rf SimpliFile.app
 	@mkdir -p SimpliFile.app/Contents/MacOS
 	@cp SimpliFile SimpliFile.app/Contents/MacOS/SimpliFile
 	@cp -r includes/ SimpliFile.app/Contents/MacOS/includes/
 	@mkdir -p SimpliFile.app/Contents
-	@echo "<?xml version='1.0' encoding='UTF-8'?>
-<plist version='1.0'>
-<dict>
-    <key>CFBundleName</key>
-    <string>SimpliFile</string>
-    <key>CFBundleExecutable</key>
-    <string>SimpliFile</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.example.simplifile</string>
-    <key>CFBundleVersion</key>
-    <string>1.0</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-</dict>
-</plist>" > SimpliFile.app/Contents/Info.plist
+
+	@printf '%s\n' \
+'<?xml version="1.0" encoding="UTF-8"?>' \
+'<plist version="1.0">' \
+'<dict>' \
+'    <key>CFBundleName</key>' \
+'    <string>SimpliFile</string>' \
+'    <key>CFBundleExecutable</key>' \
+'    <string>SimpliFile</string>' \
+'    <key>CFBundleIdentifier</key>' \
+'    <string>com.example.simplifile</string>' \
+'    <key>CFBundleVersion</key>' \
+'    <string>1.0</string>' \
+'    <key>CFBundlePackageType</key>' \
+'    <string>APPL</string>' \
+'</dict>' \
+'</plist>' \
+> SimpliFile.app/Contents/Info.plist
+
 endif
 
 clean:
