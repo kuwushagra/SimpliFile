@@ -237,7 +237,7 @@ jobs:
             **Builds by platform:**
             - Windows: SimpliFile-Windows.zip
             - Linux: SimpliFile.AppImage
-            - macOS (Apple Silicon only): SimpliFile-macos.zip
+            - macOS (both Intel & Apple Silicon): SimpliFile-macos.zip
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
